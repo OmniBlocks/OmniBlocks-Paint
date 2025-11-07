@@ -1,6 +1,7 @@
 import paper from '@turbowarp/paper';
 import {getRaster, getGuideLayer, createCanvas} from '../layer';
 import {doesColorRequireMask, forEachLinePoint, getBrushMark} from '../bitmap';
+import {getBrush} from '../../brushes';
 import {snapDeltaToAngle} from '../math';
 
 /**
@@ -30,6 +31,11 @@ class BrushTool extends paper.Tool {
         this.drawTarget = null;
         this.maskTarget = null;
         this.maskBrush = null;
+        this.brushId = null; // optional registered brush id
+    }
+    setBrushId (id) {
+        this.brushId = id;
+        this.updateCursorIfNeeded();
     }
     setColor (color) {
         this.color = color;
@@ -43,23 +49,37 @@ class BrushTool extends paper.Tool {
     drawNextLine (previousPoint, nextPoint) {
         const roundedUpRadius = Math.ceil(this.size / 2);
         const context = this.maskTarget || this.drawTarget.getContext('2d');
-        if (this.isEraser || !this.color) {
-            context.globalCompositeOperation = 'destination-out';
-        }
-        forEachLinePoint(previousPoint, nextPoint, (x, y) => {
-            context.drawImage(this.maskBrush || this.tmpCanvas, ~~x - roundedUpRadius, ~~y - roundedUpRadius);
-        });
-        if (this.isEraser || !this.color) {
-            context.globalCompositeOperation = 'source-over';
-        }
-        if (this.maskTarget) {
-            const drawContext = this.drawTarget.getContext('2d');
-            const {width, height} = drawContext.canvas;
-            drawContext.globalCompositeOperation = 'source-over';
-            drawContext.drawImage(this.maskTarget.canvas, 0, 0);
-            drawContext.globalCompositeOperation = 'source-in';
-            drawContext.fillStyle = this.color;
-            drawContext.fillRect(0, 0, width, height);
+        const brushImpl = this.brushId ? getBrush(this.brushId) : null;
+
+        if (brushImpl) {
+            // Use brush implementation to stamp at each line point
+            forEachLinePoint(previousPoint, nextPoint, (x, y) => {
+                try {
+                    brushImpl.stamp(context, ~~x, ~~y, {size: this.size, color: this.color, isEraser: this.isEraser});
+                } catch (e) {
+                    // fallback to existing tmpCanvas if brush fails
+                    context.drawImage(this.maskBrush || this.tmpCanvas, ~~x - roundedUpRadius, ~~y - roundedUpRadius);
+                }
+            });
+        } else {
+            if (this.isEraser || !this.color) {
+                context.globalCompositeOperation = 'destination-out';
+            }
+            forEachLinePoint(previousPoint, nextPoint, (x, y) => {
+                context.drawImage(this.maskBrush || this.tmpCanvas, ~~x - roundedUpRadius, ~~y - roundedUpRadius);
+            });
+            if (this.isEraser || !this.color) {
+                context.globalCompositeOperation = 'source-over';
+            }
+            if (this.maskTarget) {
+                const drawContext = this.drawTarget.getContext('2d');
+                const {width, height} = drawContext.canvas;
+                drawContext.globalCompositeOperation = 'source-over';
+                drawContext.drawImage(this.maskTarget.canvas, 0, 0);
+                drawContext.globalCompositeOperation = 'source-in';
+                drawContext.fillStyle = this.color;
+                drawContext.fillRect(0, 0, width, height);
+            }
         }
     }
     updateCursorIfNeeded () {
@@ -73,13 +93,33 @@ class BrushTool extends paper.Tool {
             this.cursorPreview = null;
         }
 
-        if (!this.cursorPreview || !(this.lastSize === this.size && this.lastColor === this.color)) {
+        const brushImpl = this.brushId ? getBrush(this.brushId) : null;
+
+        if (!this.cursorPreview || !(this.lastSize === this.size && this.lastColor === this.color && this.lastBrushId === this.brushId)) {
             if (this.cursorPreview) {
                 this.cursorPreview.remove();
             }
 
-            this.tmpCanvas = getBrushMark(this.size, this.color, this.isEraser || !this.color);
-            this.cursorPreview = new paper.Raster(this.tmpCanvas);
+            if (brushImpl) {
+                const previewCanvas = document.createElement('canvas');
+                const roundedUpRadius = Math.ceil(this.size / 2);
+                previewCanvas.width = roundedUpRadius * 2;
+                previewCanvas.height = roundedUpRadius * 2;
+                const ctx = previewCanvas.getContext('2d');
+                // center the stamp
+                try {
+                    brushImpl.stamp(ctx, roundedUpRadius, roundedUpRadius, {size: this.size, color: this.color, isEraser: this.isEraser});
+                } catch (e) {
+                    this.tmpCanvas = getBrushMark(this.size, this.color, this.isEraser || !this.color);
+                    this.cursorPreview = new paper.Raster(this.tmpCanvas);
+                }
+                if (!this.cursorPreview) {
+                    this.cursorPreview = new paper.Raster(previewCanvas);
+                }
+            } else {
+                this.tmpCanvas = getBrushMark(this.size, this.color, this.isEraser || !this.color);
+                this.cursorPreview = new paper.Raster(this.tmpCanvas);
+            }
             this.cursorPreview.guide = true;
             this.cursorPreview.parent = getGuideLayer();
             this.cursorPreview.data.isHelperItem = true;
@@ -87,6 +127,7 @@ class BrushTool extends paper.Tool {
 
         this.lastSize = this.size;
         this.lastColor = this.color;
+        this.lastBrushId = this.brushId;
     }
     constrainPoint(currentPoint, lastPoint, modifiers) {
         let delta = currentPoint.subtract(lastPoint);

@@ -25,4 +25,4 @@ const simpleBrush = {
   }
 };
 
-module.exports = simpleBrush;
+export default simpleBrush;

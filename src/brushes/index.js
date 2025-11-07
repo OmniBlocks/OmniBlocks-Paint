@@ -4,7 +4,7 @@
 
 const brushes = new Map();
 
-function registerBrush(id, brushImpl) {
+export function registerBrush(id, brushImpl) {
   if (typeof id !== 'string' || !id) throw new Error('brush id required');
   if (!brushImpl || typeof brushImpl.stamp !== 'function') {
     throw new Error('brush implementation must expose a stamp(canvasContext, x, y, options) method');
@@ -12,16 +12,10 @@ function registerBrush(id, brushImpl) {
   brushes.set(id, brushImpl);
 }
 
-function getBrush(id) {
+export function getBrush(id) {
   return brushes.get(id);
 }
 
-function listBrushes() {
+export function listBrushes() {
   return Array.from(brushes.keys());
 }
-
-module.exports = {
-  registerBrush,
-  getBrush,
-  listBrushes
-};
