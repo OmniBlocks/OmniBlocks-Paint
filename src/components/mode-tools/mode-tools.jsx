@@ -194,45 +194,59 @@ const ModeToolsComponent = props => {
     });
 
     // ImageBrushSelector: fetches a manifest at /brush_imgs/index.json (served from playground/brush_imgs)
-    const ImageBrushSelector = ({onSelectBrushId}) => {
-        const [images, setImages] = React.useState([]);
-        const [selected, setSelected] = React.useState('');
+    class ImageBrushSelector extends React.Component {
+        constructor (props) {
+            super(props);
+            this.state = {
+                images: [],
+                selected: ''
+            };
+            this.onChange = this.onChange.bind(this);
+        }
 
-        React.useEffect(() => {
+        componentDidMount () {
             fetch('/brush_imgs/index.json')
                 .then(r => r.json())
                 .then(list => {
-                    if (Array.isArray(list)) setImages(list);
+                    if (Array.isArray(list)) this.setState({images: list});
                 })
-                .catch(() => setImages([]));
-        }, []);
+                .catch(() => this.setState({images: []}));
+        }
 
-        React.useEffect(() => {
-            if (!selected) return;
-            const src = `/brush_imgs/${selected}`;
-            createImageBrush(src)
-                .then(brush => {
-                    registerBrush(brush.id, brush);
-                    if (onSelectBrushId) onSelectBrushId(brush.id);
-                })
-                .catch(err => console.error('failed to create image brush', err));
-        }, [selected]);
+        componentDidUpdate (prevProps, prevState) {
+            if (this.state.selected && this.state.selected !== prevState.selected) {
+                const src = `/brush_imgs/${this.state.selected}`;
+                createImageBrush(src)
+                    .then(brush => {
+                        registerBrush(brush.id, brush);
+                        if (this.props.onSelectBrushId) this.props.onSelectBrushId(brush.id);
+                    })
+                    .catch(err => console.error('failed to create image brush', err));
+            }
+        }
 
-        if (!images || images.length === 0) return null;
-        return (
-            <div className={styles.imageBrushSelector} style={{display: 'inline-flex', alignItems: 'center', marginLeft: 8}}>
-                <select value={selected} onChange={e => setSelected(e.target.value)}>
-                    <option value="">Select image brush</option>
-                    {images.map(f => (
-                        <option key={f} value={f}>{f}</option>
-                    ))}
-                </select>
-                {selected && (
-                    <img src={`/brush_imgs/${selected}`} alt="preview" style={{width: 26, height: 26, marginLeft: 8, objectFit: 'contain'}} />
-                )}
-            </div>
-        );
-    };
+        onChange (e) {
+            this.setState({selected: e.target.value});
+        }
+
+        render () {
+            const {images, selected} = this.state;
+            if (!images || images.length === 0) return null;
+            return (
+                <div className={styles.imageBrushSelector} style={{display: 'inline-flex', alignItems: 'center', marginLeft: 8}}>
+                    <select value={selected} onChange={this.onChange}>
+                        <option value="">Select image brush</option>
+                        {images.map(f => (
+                            <option key={f} value={f}>{f}</option>
+                        ))}
+                    </select>
+                    {selected && (
+                        <img src={`/brush_imgs/${selected}`} alt="preview" style={{width: 26, height: 26, marginLeft: 8, objectFit: 'contain'}} />
+                    )}
+                </div>
+            );
+        }
+    }
 
     switch (props.mode) {
         case Modes.BRUSH:
