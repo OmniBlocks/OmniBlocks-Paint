@@ -16,6 +16,8 @@ import { changeRoundedCornerSize } from '../../reducers/rect-mode';
 import { changeTrianglePolyCount, changeTrianglePointCount } from '../../reducers/triangle-mode';
 import { changeCurrentlySelectedShape } from '../../reducers/sussy-mode';
 import { changeBitBrushSize } from '../../reducers/bit-brush-size';
+import { listBrushes, getBrush } from '../../brushes';
+import { changeBitBrushId } from '../../reducers/bit-brush-id';
 import { changeBitEraserSize } from '../../reducers/bit-eraser-size';
 import { setShapesFilled } from '../../reducers/fill-bitmap-shapes';
 import { setTextAlignment } from '../../reducers/text-alignment';
@@ -225,6 +227,18 @@ const ModeToolsComponent = props => {
                             value={currentBrushValue}
                             onSubmit={changeFunction}
                         />
+                        {/* Brush selection dropdown for bitmap mode */}
+                        {isBitmap(props.format) && (
+                            <Dropdown
+                                items={listBrushes().map(id => ({
+                                    value: id,
+                                    label: (getBrush(id) && getBrush(id).description) || id
+                                }))}
+                                value={props.bitBrushId}
+                                onChange={val => props.onChangeBitBrushId(val)}
+                                className={styles.brushDropdown}
+                            />
+                        )}
                         
                         {hasSimplifyOption && (
                             <Label text={props.intl.formatMessage(messages.brushSimplify)} style={{ marginLeft: 'calc(2 * .25rem)' }}>

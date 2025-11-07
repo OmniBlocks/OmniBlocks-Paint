@@ -2,6 +2,7 @@ import {combineReducers} from 'redux';
 import modeReducer from './modes';
 import addonUtilReducer from './addon-util';
 import bitBrushSizeReducer from './bit-brush-size';
+import bitBrushIdReducer from './bit-brush-id';
 import bitEraserSizeReducer from './bit-eraser-size';
 import brushModeReducer from './brush-mode';
 import eraserModeReducer from './eraser-mode';
@@ -33,6 +34,7 @@ export default combineReducers({
     mode: modeReducer,
     addonUtil: addonUtilReducer,
     bitBrushSize: bitBrushSizeReducer,
+    bitBrushId: bitBrushIdReducer,
     bitEraserSize: bitEraserSizeReducer,
     brushMode: brushModeReducer,
     color: colorReducer,

@@ -537,6 +537,8 @@ const mapStateToProps = state => ({
     format: state.scratchPaint.format,
     mode: state.scratchPaint.mode,
     selectedItems: state.scratchPaint.selectedItems
+    ,
+    bitBrushId: state.scratchPaint.bitBrushId
 });
 const mapDispatchToProps = dispatch => ({
     clearSelectedItems: () => {
@@ -544,6 +546,10 @@ const mapDispatchToProps = dispatch => ({
     },
     setSelectedItems: format => {
         dispatch(setSelectedItems(getSelectedLeafItems(), isBitmap(format)));
+    }
+    ,
+    onChangeBitBrushId: brushId => {
+        dispatch(changeBitBrushId(brushId));
     }
 });
 

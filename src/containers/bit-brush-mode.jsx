@@ -33,6 +33,9 @@ class BitBrushMode extends React.Component {
         if (this.tool && nextProps.bitBrushSize !== this.props.bitBrushSize) {
             this.tool.setBrushSize(nextProps.bitBrushSize);
         }
+        if (this.tool && nextProps.bitBrushId !== this.props.bitBrushId) {
+            this.tool.setBrushId(nextProps.bitBrushId);
+        }
 
         if (nextProps.isBitBrushModeActive && !this.props.isBitBrushModeActive) {
             this.activateTool();
@@ -62,6 +65,7 @@ class BitBrushMode extends React.Component {
         );
         this.tool.setColor(color);
         this.tool.setBrushSize(this.props.bitBrushSize);
+        if (this.props.bitBrushId) this.tool.setBrushId(this.props.bitBrushId);
 
         this.tool.activate();
     }
@@ -85,6 +89,7 @@ BitBrushMode.propTypes = {
     clearGradient: PropTypes.func.isRequired,
     clearSelectedItems: PropTypes.func.isRequired,
     color: PropTypes.string,
+    bitBrushId: PropTypes.string,
     handleMouseDown: PropTypes.func.isRequired,
     isBitBrushModeActive: PropTypes.bool.isRequired,
     onChangeFillColor: PropTypes.func.isRequired,
@@ -95,6 +100,8 @@ const mapStateToProps = state => ({
     bitBrushSize: state.scratchPaint.bitBrushSize,
     color: state.scratchPaint.color.fillColor.primary,
     isBitBrushModeActive: state.scratchPaint.mode === Modes.BIT_BRUSH
+    ,
+    bitBrushId: state.scratchPaint.bitBrushId
 });
 const mapDispatchToProps = dispatch => ({
     clearSelectedItems: () => {
