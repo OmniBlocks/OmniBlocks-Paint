@@ -1,3 +1,7 @@
+// Ensure generator/async helpers are available at runtime (fixes
+// "regeneratorRuntime is not defined" when using async/await).
+import 'regenerator-runtime/runtime';
+
 import PaintEditor from './containers/tw-paint-editor-wrapper.jsx';
 import ScratchPaintReducer from './reducers/scratch-paint-reducer';
 
