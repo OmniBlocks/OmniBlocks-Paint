@@ -285,15 +285,15 @@ const ModeToolsComponent = props => {
                         />
                         {/* Brush selection dropdown for bitmap mode */}
                         {isBitmap(props.format) && (
-                            <Dropdown
-                                items={listBrushes().map(id => ({
-                                    value: id,
-                                    label: (getBrush(id) && getBrush(id).description) || id
-                                }))}
-                                value={props.bitBrushId}
-                                onChange={val => props.onChangeBitBrushId(val)}
+                            <select
                                 className={styles.brushDropdown}
-                            />
+                                value={props.bitBrushId || ''}
+                                onChange={e => props.onChangeBitBrushId(e.target.value)}
+                            >
+                                {listBrushes().map(id => (
+                                    <option key={id} value={id}>{(getBrush(id) && getBrush(id).description) || id}</option>
+                                ))}
+                            </select>
                         )}
                         {/* Image brush selector (reads playground/brush_imgs/index.json) */}
                         {isBitmap(props.format) && (
