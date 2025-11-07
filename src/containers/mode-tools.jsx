@@ -23,6 +23,7 @@ import {flipBitmapHorizontal, flipBitmapVertical, selectAllBitmap} from '../help
 import Formats, {isBitmap} from '../lib/format';
 import Modes from '../lib/modes';
 import opentype from 'opentype.js';
+import { changeBitBrushId } from '../reducers/bit-brush-id';
 
 class ModeTools extends React.Component {
     constructor (props) {
