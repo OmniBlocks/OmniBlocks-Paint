@@ -458,7 +458,9 @@ const uint8ToBase64 = function(uint8) {
  * @returns {string} css for directions to custom fonts, used by <style> in 'convertToBitmap'
  */
 const generateCustomFontsCSS = function() {
-    if (!ReduxStore) return '';
+    // ReduxStore may not be defined in some embed/test environments. Use
+    // a typeof check to avoid ReferenceError when it's missing.
+    if (typeof ReduxStore === 'undefined' || !ReduxStore) return '';
     const fonts = ReduxStore.getState().scratchPaint.customFonts.filter(f => !f.system);
 
     let fontCSS = '';

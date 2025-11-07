@@ -16,6 +16,9 @@ import { changeRoundedCornerSize } from '../../reducers/rect-mode';
 import { changeTrianglePolyCount, changeTrianglePointCount } from '../../reducers/triangle-mode';
 import { changeCurrentlySelectedShape } from '../../reducers/sussy-mode';
 import { changeBitBrushSize } from '../../reducers/bit-brush-size';
+import { listBrushes, getBrush, registerBrush } from '../../brushes';
+import createImageBrush from '../../brushes/image-brush';
+import { changeBitBrushId } from '../../reducers/bit-brush-id';
 import { changeBitEraserSize } from '../../reducers/bit-eraser-size';
 import { setShapesFilled } from '../../reducers/fill-bitmap-shapes';
 import { setTextAlignment } from '../../reducers/text-alignment';
@@ -190,6 +193,61 @@ const ModeToolsComponent = props => {
         }
     });
 
+    // ImageBrushSelector: fetches a manifest at /brush_imgs/index.json (served from playground/brush_imgs)
+    class ImageBrushSelector extends React.Component {
+        constructor (props) {
+            super(props);
+            this.state = {
+                images: [],
+                selected: ''
+            };
+            this.onChange = this.onChange.bind(this);
+        }
+
+        componentDidMount () {
+            fetch('/brush_imgs/index.json')
+                .then(r => r.json())
+                .then(list => {
+                    if (Array.isArray(list)) this.setState({images: list});
+                })
+                .catch(() => this.setState({images: []}));
+        }
+
+        componentDidUpdate (prevProps, prevState) {
+            if (this.state.selected && this.state.selected !== prevState.selected) {
+                const src = `/brush_imgs/${this.state.selected}`;
+                createImageBrush(src)
+                    .then(brush => {
+                        registerBrush(brush.id, brush);
+                        if (this.props.onSelectBrushId) this.props.onSelectBrushId(brush.id);
+                    })
+                    .catch(err => console.error('failed to create image brush', err));
+            }
+        }
+
+        onChange (e) {
+            this.setState({selected: e.target.value});
+        }
+
+        render () {
+            const {images, selected} = this.state;
+            if (!images || images.length === 0) return null;
+            return (
+                <div className={styles.imageBrushSelector} style={{display: 'inline-flex', alignItems: 'center', marginLeft: 8}}>
+                    <select value={selected} onChange={this.onChange}>
+                        <option value="">Select image brush</option>
+                        {images.map(f => (
+                            <option key={f} value={f}>{f}</option>
+                        ))}
+                    </select>
+                    {selected && (
+                        <img src={`/brush_imgs/${selected}`} alt="preview" style={{width: 26, height: 26, marginLeft: 8, objectFit: 'contain'}} />
+                    )}
+                </div>
+            );
+        }
+    }
+
     switch (props.mode) {
         case Modes.BRUSH:
         /* falls through */
@@ -225,6 +283,22 @@ const ModeToolsComponent = props => {
                             value={currentBrushValue}
                             onSubmit={changeFunction}
                         />
+                        {/* Brush selection dropdown for bitmap mode */}
+                        {isBitmap(props.format) && (
+                            <select
+                                className={styles.brushDropdown}
+                                value={props.bitBrushId || ''}
+                                onChange={e => props.onChangeBitBrushId(e.target.value)}
+                            >
+                                {listBrushes().map(id => (
+                                    <option key={id} value={id}>{(getBrush(id) && getBrush(id).description) || id}</option>
+                                ))}
+                            </select>
+                        )}
+                        {/* Image brush selector (reads playground/brush_imgs/index.json) */}
+                        {isBitmap(props.format) && (
+                            <ImageBrushSelector onSelectBrushId={props.onChangeBitBrushId} />
+                        )}
                         
                         {hasSimplifyOption && (
                             <Label text={props.intl.formatMessage(messages.brushSimplify)} style={{ marginLeft: 'calc(2 * .25rem)' }}>
@@ -273,6 +347,8 @@ const ModeToolsComponent = props => {
                                 </ButtonGroup>
                             </InputGroup>
                         )}
+
+                        
                     </div>
                 );
             }
